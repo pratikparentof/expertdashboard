@@ -1,32 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Greeting = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const { user, profile, isLoading } = useAuth();
 
   useEffect(() => {
-    const userData = localStorage.getItem('coachUser');
-    if (!userData) {
+    if (!isLoading && !user) {
       navigate('/login');
       return;
     }
-    
-    const parsed = JSON.parse(userData);
-    setUser(parsed);
 
-    // Auto-redirect after 1.5 seconds
-    const timer = setTimeout(() => {
-      navigate('/dashboard');
-    }, 1500);
+    if (profile) {
+      // Auto-redirect after 1.5 seconds
+      const timer = setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
 
-    return () => clearTimeout(timer);
-  }, [navigate]);
+      return () => clearTimeout(timer);
+    }
+  }, [navigate, user, profile, isLoading]);
 
-  if (!user) return null;
+  if (isLoading || !profile) return null;
 
-  const roleLabel = user.role === 'coach' ? 'Coach' : 'Freelancer';
-  const firstName = user.name.split(' ')[0];
+  const roleLabel = profile.role === 'coach' ? 'Coach' : 'Freelancer';
+  const firstName = profile.name.split(' ')[0];
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background">

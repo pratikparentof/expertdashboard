@@ -4,27 +4,33 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { signIn, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already logged in
+  if (user) {
+    navigate('/greeting');
+    return null;
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login - will be replaced with real auth
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const { error } = await signIn(email, password);
     
-    // Store mock user data
-    localStorage.setItem('coachUser', JSON.stringify({
-      id: 'coach-1',
-      name: 'Sarah Johnson',
-      email: email,
-      role: 'coach',
-    }));
+    if (error) {
+      toast.error(error.message || 'Failed to sign in');
+      setIsLoading(false);
+      return;
+    }
     
     setIsLoading(false);
     navigate('/greeting');

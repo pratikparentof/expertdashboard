@@ -1,26 +1,28 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AppProvider } from '@/contexts/AppContext';
+import { useAuth } from '@/contexts/AuthContext';
 import CoachProfileCard from '@/components/dashboard/CoachProfileCard';
 import ChildrenList from '@/components/dashboard/ChildrenList';
 import SessionsCalendar from '@/components/dashboard/SessionsCalendar';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 
-const DashboardContent = () => {
+const Dashboard = () => {
   const navigate = useNavigate();
+  const { user, signOut, isLoading } = useAuth();
 
   useEffect(() => {
-    const userData = localStorage.getItem('coachUser');
-    if (!userData) {
+    if (!isLoading && !user) {
       navigate('/login');
     }
-  }, [navigate]);
+  }, [user, isLoading, navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('coachUser');
+  const handleLogout = async () => {
+    await signOut();
     navigate('/login');
   };
+
+  if (isLoading || !user) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,14 +53,6 @@ const DashboardContent = () => {
         </main>
       </div>
     </div>
-  );
-};
-
-const Dashboard = () => {
-  return (
-    <AppProvider>
-      <DashboardContent />
-    </AppProvider>
   );
 };
 
