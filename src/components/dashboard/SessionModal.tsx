@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useChildren } from '@/hooks/useChildren';
+import { useSessions, SessionData } from '@/hooks/useSessions';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { ExternalLink, Trash2 } from 'lucide-react';
-import { sessionTypes, countries, timezones, Session } from '@/data/mockData';
+import { sessionTypes, countries, timezones } from '@/data/mockData';
 import { format } from 'date-fns';
 
 interface SessionModalProps {
@@ -40,16 +41,16 @@ interface SessionModalProps {
 }
 
 const SessionModal = ({ sessionId, defaultDate, open, onClose }: SessionModalProps) => {
+  const { children } = useChildren();
   const { 
     sessions, 
-    children, 
-    getParentByChildId, 
-    getChildById,
     addSession, 
     updateSession, 
     removeSession,
-    coach,
-  } = useApp();
+    isAdding,
+    isUpdating,
+    isRemoving,
+  } = useSessions();
 
   const existingSession = sessionId ? sessions.find(s => s.id === sessionId) : null;
   const isEditing = !!existingSession;
@@ -57,7 +58,7 @@ const SessionModal = ({ sessionId, defaultDate, open, onClose }: SessionModalPro
   const [childId, setChildId] = useState('');
   const [sessionType, setSessionType] = useState('');
   const [date, setDate] = useState('');
-  const [status, setStatus] = useState<Session['status']>('upcoming');
+  const [status, setStatus] = useState<SessionData['status']>('upcoming');
   const [timeCST, setTimeCST] = useState('09:00');
   const [inviteeCountry, setInviteeCountry] = useState('');
   const [inviteeTimezone, setInviteeTimezone] = useState('');
@@ -164,10 +165,8 @@ const SessionModal = ({ sessionId, defaultDate, open, onClose }: SessionModalPro
   const availableTimezones = inviteeCountry ? (timezones[inviteeCountry] || []) : [];
 
   const handleSave = () => {
-    const sessionData: Session = {
-      id: existingSession?.id || `session-${Date.now()}`,
+    const sessionData = {
       childId,
-      coachId: coach.id,
       sessionType,
       date,
       timeCST,
@@ -181,8 +180,8 @@ const SessionModal = ({ sessionId, defaultDate, open, onClose }: SessionModalPro
       assessmentViewerUrl: assessmentViewerUrl || undefined,
     };
 
-    if (isEditing) {
-      updateSession(sessionData);
+    if (isEditing && existingSession) {
+      updateSession({ id: existingSession.id, ...sessionData });
     } else {
       addSession(sessionData);
     }
@@ -216,6 +215,7 @@ const SessionModal = ({ sessionId, defaultDate, open, onClose }: SessionModalPro
   };
 
   const canSave = childId && sessionType && date && timeCST;
+  const isSaving = isAdding || isUpdating;
 
   return (
     <>
@@ -234,14 +234,11 @@ const SessionModal = ({ sessionId, defaultDate, open, onClose }: SessionModalPro
                   <SelectValue placeholder="Select a child" />
                 </SelectTrigger>
                 <SelectContent>
-                  {children.map(child => {
-                    const parent = getParentByChildId(child.id);
-                    return (
-                      <SelectItem key={child.id} value={child.id}>
-                        {child.name} — {parent?.name}
-                      </SelectItem>
-                    );
-                  })}
+                  {children.map(child => (
+                    <SelectItem key={child.id} value={child.id}>
+                      {child.name} — {child.parentName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -274,7 +271,7 @@ const SessionModal = ({ sessionId, defaultDate, open, onClose }: SessionModalPro
             {/* Status */}
             <div className="space-y-2">
               <Label>Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as Session['status'])}>
+              <Select value={status} onValueChange={(v) => setStatus(v as SessionData['status'])}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -435,6 +432,7 @@ const SessionModal = ({ sessionId, defaultDate, open, onClose }: SessionModalPro
                 <Button 
                   variant="destructive" 
                   onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isRemoving}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Remove
@@ -445,8 +443,8 @@ const SessionModal = ({ sessionId, defaultDate, open, onClose }: SessionModalPro
               <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={!canSave}>
-                {isEditing ? 'Save Changes' : 'Create Session'}
+              <Button onClick={handleSave} disabled={!canSave || isSaving}>
+                {isSaving ? 'Saving...' : isEditing ? 'Save Changes' : 'Create Session'}
               </Button>
             </div>
           </DialogFooter>
@@ -465,9 +463,10 @@ const SessionModal = ({ sessionId, defaultDate, open, onClose }: SessionModalPro
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
+              disabled={isRemoving}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Remove
+              {isRemoving ? 'Removing...' : 'Remove'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

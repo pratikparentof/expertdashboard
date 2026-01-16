@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useSearchChildrenByParentEmail, useChildren } from '@/hooks/useChildren';
 import {
   Dialog,
   DialogContent,
@@ -10,48 +10,84 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, UserPlus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, UserPlus, Loader2 } from 'lucide-react';
 
 interface AddChildModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const AddChildModal = ({ open, onOpenChange }: AddChildModalProps) => {
-  const { parents, addChild } = useApp();
-  const [parentEmail, setParentEmail] = useState('');
-  const [foundParent, setFoundParent] = useState<typeof parents[0] | null>(null);
-  const [childName, setChildName] = useState('');
-  const [childAge, setChildAge] = useState('');
-  const [searched, setSearched] = useState(false);
+interface FoundChild {
+  id: string;
+  name: string;
+  age: number;
+  isAlreadyAssigned: boolean;
+}
 
-  const handleSearch = () => {
-    const parent = parents.find(p => p.email.toLowerCase() === parentEmail.toLowerCase());
-    setFoundParent(parent || null);
-    setSearched(true);
+interface FoundParent {
+  id: string;
+  name: string;
+  email: string;
+}
+
+const AddChildModal = ({ open, onOpenChange }: AddChildModalProps) => {
+  const { linkChild, isLinking } = useChildren();
+  const searchMutation = useSearchChildrenByParentEmail();
+  
+  const [parentEmail, setParentEmail] = useState('');
+  const [foundParent, setFoundParent] = useState<FoundParent | null>(null);
+  const [foundChildren, setFoundChildren] = useState<FoundChild[]>([]);
+  const [selectedChildren, setSelectedChildren] = useState<Set<string>>(new Set());
+  const [searched, setSearched] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSearch = async () => {
+    setError('');
+    setFoundParent(null);
+    setFoundChildren([]);
+    setSelectedChildren(new Set());
+    
+    try {
+      const result = await searchMutation.mutateAsync(parentEmail);
+      setFoundParent(result.parent);
+      setFoundChildren(result.children);
+      setSearched(true);
+    } catch (err) {
+      setSearched(true);
+      setError(err instanceof Error ? err.message : 'Failed to search');
+    }
   };
 
-  const handleAddChild = () => {
-    if (!foundParent || !childName || !childAge) return;
+  const toggleChild = (childId: string) => {
+    const newSet = new Set(selectedChildren);
+    if (newSet.has(childId)) {
+      newSet.delete(childId);
+    } else {
+      newSet.add(childId);
+    }
+    setSelectedChildren(newSet);
+  };
 
-    addChild({
-      id: `child-${Date.now()}`,
-      name: childName,
-      age: parseInt(childAge),
-      parentId: foundParent.id,
+  const handleAddChildren = () => {
+    selectedChildren.forEach(childId => {
+      linkChild(childId);
     });
-
     handleClose();
   };
 
   const handleClose = () => {
     setParentEmail('');
     setFoundParent(null);
-    setChildName('');
-    setChildAge('');
+    setFoundChildren([]);
+    setSelectedChildren(new Set());
     setSearched(false);
+    setError('');
     onOpenChange(false);
   };
+
+  const availableChildren = foundChildren.filter(c => !c.isAlreadyAssigned);
+  const canAdd = selectedChildren.size > 0;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -73,17 +109,38 @@ const AddChildModal = ({ open, onOpenChange }: AddChildModalProps) => {
                   setParentEmail(e.target.value);
                   setSearched(false);
                   setFoundParent(null);
+                  setFoundChildren([]);
+                  setError('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearch();
+                  }
                 }}
               />
-              <Button type="button" variant="outline" onClick={handleSearch}>
-                <Search className="h-4 w-4" />
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleSearch}
+                disabled={searchMutation.isPending || !parentEmail}
+              >
+                {searchMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
 
-          {searched && !foundParent && (
-            <p className="text-sm text-destructive">
-              No parent found with this email address.
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+
+          {searched && foundParent && foundChildren.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No children found for this parent.
             </p>
           )}
 
@@ -94,30 +151,44 @@ const AddChildModal = ({ open, onOpenChange }: AddChildModalProps) => {
             </div>
           )}
 
-          {foundParent && (
-            <>
+          {foundChildren.length > 0 && (
+            <div className="space-y-2">
+              <Label>Select children to add</Label>
               <div className="space-y-2">
-                <Label htmlFor="childName">Child's Name</Label>
-                <Input
-                  id="childName"
-                  placeholder="Enter child's name"
-                  value={childName}
-                  onChange={(e) => setChildName(e.target.value)}
-                />
+                {foundChildren.map(child => (
+                  <div
+                    key={child.id}
+                    className={`flex items-center gap-3 p-3 rounded-lg border ${
+                      child.isAlreadyAssigned 
+                        ? 'bg-muted/30 border-muted' 
+                        : 'bg-background border-border hover:bg-muted/50'
+                    }`}
+                  >
+                    <Checkbox
+                      id={child.id}
+                      checked={selectedChildren.has(child.id)}
+                      onCheckedChange={() => toggleChild(child.id)}
+                      disabled={child.isAlreadyAssigned}
+                    />
+                    <label 
+                      htmlFor={child.id}
+                      className={`flex-1 cursor-pointer ${child.isAlreadyAssigned ? 'opacity-50' : ''}`}
+                    >
+                      <p className="font-medium">{child.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Age {child.age}
+                        {child.isAlreadyAssigned && ' • Already assigned'}
+                      </p>
+                    </label>
+                  </div>
+                ))}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="childAge">Child's Age</Label>
-                <Input
-                  id="childAge"
-                  type="number"
-                  min="1"
-                  max="18"
-                  placeholder="Enter age"
-                  value={childAge}
-                  onChange={(e) => setChildAge(e.target.value)}
-                />
-              </div>
-            </>
+              {availableChildren.length === 0 && foundChildren.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  All children are already assigned to you.
+                </p>
+              )}
+            </div>
           )}
         </div>
 
@@ -126,11 +197,15 @@ const AddChildModal = ({ open, onOpenChange }: AddChildModalProps) => {
             Cancel
           </Button>
           <Button
-            onClick={handleAddChild}
-            disabled={!foundParent || !childName || !childAge}
+            onClick={handleAddChildren}
+            disabled={!canAdd || isLinking}
           >
-            <UserPlus className="h-4 w-4 mr-2" />
-            Add Child
+            {isLinking ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <UserPlus className="h-4 w-4 mr-2" />
+            )}
+            Add {selectedChildren.size > 0 ? `(${selectedChildren.size})` : 'Child'}
           </Button>
         </DialogFooter>
       </DialogContent>

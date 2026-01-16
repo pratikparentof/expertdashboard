@@ -1,4 +1,5 @@
-import { useApp } from '@/contexts/AppContext';
+import { useChildren } from '@/hooks/useChildren';
+import { useSessions } from '@/hooks/useSessions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,12 +17,12 @@ interface RemoveChildModalProps {
 }
 
 const RemoveChildModal = ({ childId, onClose }: RemoveChildModalProps) => {
-  const { getChildById, getParentByChildId, removeChild, getSessionsByChildId } = useApp();
+  const { children, removeChild, isRemoving } = useChildren();
+  const { getSessionsByChildId } = useSessions();
 
   if (!childId) return null;
 
-  const child = getChildById(childId);
-  const parent = getParentByChildId(childId);
+  const child = children.find(c => c.id === childId);
   const sessions = getSessionsByChildId(childId);
 
   if (!child) return null;
@@ -49,9 +50,10 @@ const RemoveChildModal = ({ childId, onClose }: RemoveChildModalProps) => {
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleRemove}
+            disabled={isRemoving}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            Remove
+            {isRemoving ? 'Removing...' : 'Remove'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useChildren } from '@/hooks/useChildren';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -14,7 +14,7 @@ import SessionHistoryModal from './SessionHistoryModal';
 import RemoveChildModal from './RemoveChildModal';
 
 const ChildrenList = () => {
-  const { children, getParentByChildId } = useApp();
+  const { children } = useChildren();
   const [showAddChild, setShowAddChild] = useState(false);
   const [selectedChildForHistory, setSelectedChildForHistory] = useState<string | null>(null);
   const [selectedChildForRemove, setSelectedChildForRemove] = useState<string | null>(null);
@@ -43,52 +43,49 @@ const ChildrenList = () => {
         </CardHeader>
         <CardContent className="flex-1 overflow-auto pb-4">
           <div className="space-y-2">
-            {children.map(child => {
-              const parent = getParentByChildId(child.id);
-              return (
-                <div
-                  key={child.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-foreground truncate">{child.name}</p>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{parent?.name}</span>
-                      <span>•</span>
-                      <span>Age {child.age}</span>
-                    </div>
+            {children.map(child => (
+              <div
+                key={child.id}
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-foreground truncate">{child.name}</p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{child.parentName}</span>
+                    <span>•</span>
+                    <span>Age {child.age}</span>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
-                      <DropdownMenuItem onClick={() => handleOpenUrl(child.caseRecordSheetUrl)}>
-                        <FileText className="h-4 w-4 mr-2" />
-                        Open Case Record Sheet
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleOpenUrl(child.assessmentViewerUrl)}>
-                        <ClipboardList className="h-4 w-4 mr-2" />
-                        Open Assessment Viewer
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setSelectedChildForHistory(child.id)}>
-                        <History className="h-4 w-4 mr-2" />
-                        View Session History
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => setSelectedChildForRemove(child.id)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <UserMinus className="h-4 w-4 mr-2" />
-                        Remove Child
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
-              );
-            })}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem onClick={() => handleOpenUrl(child.caseRecordSheetUrl)}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Open Case Record Sheet
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleOpenUrl(child.assessmentViewerUrl)}>
+                      <ClipboardList className="h-4 w-4 mr-2" />
+                      Open Assessment Viewer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSelectedChildForHistory(child.id)}>
+                      <History className="h-4 w-4 mr-2" />
+                      View Session History
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setSelectedChildForRemove(child.id)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <UserMinus className="h-4 w-4 mr-2" />
+                      Remove Child
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ))}
             {children.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <p>No children assigned yet.</p>
