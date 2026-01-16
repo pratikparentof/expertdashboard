@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { useApp } from '@/contexts/AppContext';
+import { useChildren } from '@/hooks/useChildren';
+import { useSessions } from '@/hooks/useSessions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,12 +45,17 @@ const statusStyles = {
 };
 
 const SessionsCalendar = () => {
-  const { sessions, getChildById } = useApp();
+  const { children } = useChildren();
+  const { sessions } = useSessions();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createDate, setCreateDate] = useState<string | null>(null);
+
+  const getChildById = (childId: string) => {
+    return children.find(c => c.id === childId);
+  };
 
   const dateRange = useMemo(() => {
     switch (viewMode) {
@@ -69,7 +75,6 @@ const SessionsCalendar = () => {
   }, [currentDate, viewMode]);
 
   const navigate = (direction: 'prev' | 'next') => {
-    const modifier = direction === 'next' ? 1 : -1;
     switch (viewMode) {
       case 'day':
         setCurrentDate(direction === 'next' ? addDays(currentDate, 1) : subDays(currentDate, 1));

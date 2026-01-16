@@ -1,4 +1,5 @@
-import { useApp } from '@/contexts/AppContext';
+import { useChildren } from '@/hooks/useChildren';
+import { useSessions } from '@/hooks/useSessions';
 import {
   Dialog,
   DialogContent,
@@ -23,12 +24,12 @@ const statusColors = {
 };
 
 const SessionHistoryModal = ({ childId, onClose }: SessionHistoryModalProps) => {
-  const { getChildById, getSessionsByChildId, getParentByChildId } = useApp();
+  const { children } = useChildren();
+  const { getSessionsByChildId } = useSessions();
 
   if (!childId) return null;
 
-  const child = getChildById(childId);
-  const parent = getParentByChildId(childId);
+  const child = children.find(c => c.id === childId);
   const sessions = getSessionsByChildId(childId).sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
@@ -41,7 +42,7 @@ const SessionHistoryModal = ({ childId, onClose }: SessionHistoryModalProps) => 
         <DialogHeader>
           <DialogTitle>Session History</DialogTitle>
           <div className="text-sm text-muted-foreground">
-            {child.name} • {parent?.name}
+            {child.name} • {child.parentName}
           </div>
         </DialogHeader>
 
