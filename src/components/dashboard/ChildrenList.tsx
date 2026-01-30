@@ -8,16 +8,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Plus, MoreVertical, FileText, ClipboardList, History, UserMinus } from 'lucide-react';
+import { Plus, MoreVertical, FileText, ClipboardList, History, UserMinus, Pencil } from 'lucide-react';
 import AddChildModal from './AddChildModal';
 import SessionHistoryModal from './SessionHistoryModal';
 import RemoveChildModal from './RemoveChildModal';
+import EditChildLinksModal from './EditChildLinksModal';
 
 const ChildrenList = () => {
   const { children } = useChildren();
   const [showAddChild, setShowAddChild] = useState(false);
   const [selectedChildForHistory, setSelectedChildForHistory] = useState<string | null>(null);
   const [selectedChildForRemove, setSelectedChildForRemove] = useState<string | null>(null);
+  const [selectedChildForEditLinks, setSelectedChildForEditLinks] = useState<string | null>(null);
 
   const handleOpenUrl = (url?: string) => {
     if (url) {
@@ -62,14 +64,42 @@ const ChildrenList = () => {
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuItem onClick={() => handleOpenUrl(child.caseRecordSheetUrl)}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      Open Case Record Sheet
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuItem className="flex items-center justify-between p-0">
+                      <button 
+                        className="flex items-center flex-1 px-2 py-1.5"
+                        onClick={() => handleOpenUrl(child.caseRecordSheetUrl)}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Open Case Record Sheet
+                      </button>
+                      <button 
+                        className="p-1.5 hover:bg-accent rounded-sm mr-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedChildForEditLinks(child.id);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleOpenUrl(child.assessmentViewerUrl)}>
-                      <ClipboardList className="h-4 w-4 mr-2" />
-                      Open Assessment Viewer
+                    <DropdownMenuItem className="flex items-center justify-between p-0">
+                      <button 
+                        className="flex items-center flex-1 px-2 py-1.5"
+                        onClick={() => handleOpenUrl(child.assessmentViewerUrl)}
+                      >
+                        <ClipboardList className="h-4 w-4 mr-2" />
+                        Open Assessment Viewer
+                      </button>
+                      <button 
+                        className="p-1.5 hover:bg-accent rounded-sm mr-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedChildForEditLinks(child.id);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setSelectedChildForHistory(child.id)}>
                       <History className="h-4 w-4 mr-2" />
@@ -106,6 +136,11 @@ const ChildrenList = () => {
       <RemoveChildModal 
         childId={selectedChildForRemove} 
         onClose={() => setSelectedChildForRemove(null)} 
+      />
+      
+      <EditChildLinksModal 
+        childId={selectedChildForEditLinks} 
+        onClose={() => setSelectedChildForEditLinks(null)} 
       />
     </>
   );

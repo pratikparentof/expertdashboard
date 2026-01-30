@@ -149,13 +149,9 @@ export const mockSessions: Session[] = [
 ];
 
 export const sessionTypes = [
-  'Initial Assessment',
-  'Follow-up Session',
-  'Progress Review',
-  'Skill Building',
-  'Parent Consultation',
-  'Goal Setting',
-  'Behavioral Session',
+  '1st parent coach call (Parent & child)',
+  'Child session',
+  'Progress review call (Parent)',
 ];
 
 export const countries = [
