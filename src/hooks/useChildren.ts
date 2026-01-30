@@ -132,14 +132,44 @@ export const useChildren = () => {
     },
   });
 
+  // Update child links (case record sheet, assessment viewer URLs)
+  const updateChildLinksMutation = useMutation({
+    mutationFn: async ({ childId, caseRecordSheetUrl, assessmentViewerUrl }: {
+      childId: string;
+      caseRecordSheetUrl?: string;
+      assessmentViewerUrl?: string;
+    }) => {
+      if (!user) throw new Error('Not authenticated');
+
+      const { error } = await supabase
+        .from('children')
+        .update({
+          case_record_sheet_url: caseRecordSheetUrl || null,
+          assessment_viewer_url: assessmentViewerUrl || null,
+        })
+        .eq('id', childId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['children'] });
+      toast.success('Links updated successfully');
+    },
+    onError: (error: Error) => {
+      toast.error('Failed to update links: ' + error.message);
+    },
+  });
+
   return {
     children,
     isLoading,
     error,
     removeChild: removeChildMutation.mutate,
     linkChild: linkChildMutation.mutate,
+    updateChildLinks: updateChildLinksMutation.mutate,
     isRemoving: removeChildMutation.isPending,
     isLinking: linkChildMutation.isPending,
+    isUpdatingLinks: updateChildLinksMutation.isPending,
   };
 };
 
