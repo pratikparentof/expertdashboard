@@ -37,7 +37,7 @@ import AssignCoachModal from '@/components/management/AssignCoachModal';
 
 const AllSessions = () => {
   const navigate = useNavigate();
-  const { user, profile, signOut, isLoading } = useAuth();
+  const { user, profile, role, signOut, isLoading } = useAuth();
   const { sessions, isLoading: sessionsLoading } = useAllSessions();
   const { coaches } = useCoaches();
 
@@ -58,10 +58,10 @@ const AllSessions = () => {
       return;
     }
     
-    if (profile && profile.role !== 'admin' && profile.role !== 'manager') {
+    if (role && role !== 'admin' && role !== 'manager') {
       navigate('/dashboard');
     }
-  }, [user, profile, isLoading, navigate]);
+  }, [user, role, isLoading, navigate]);
 
   const handleLogout = async () => {
     await signOut();

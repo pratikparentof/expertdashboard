@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Mail, Users, Calendar } from 'lucide-react';
 
 const CoachProfileCard = () => {
-  const { profile } = useAuth();
+  const { profile, role } = useAuth();
   const { children } = useChildren();
   const { sessions } = useSessions();
   
@@ -16,7 +16,7 @@ const CoachProfileCard = () => {
   ).length;
 
   const name = profile?.name || 'Coach';
-  const role = profile?.role || 'coach';
+  const displayRole = role || 'coach';
   const email = profile?.email || '';
 
   const initials = name
@@ -36,7 +36,7 @@ const CoachProfileCard = () => {
           </Avatar>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-foreground truncate">{name}</h3>
-            <p className="text-sm text-muted-foreground capitalize">{role}</p>
+            <p className="text-sm text-muted-foreground capitalize">{displayRole}</p>
           </div>
         </div>
         

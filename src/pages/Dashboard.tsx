@@ -9,7 +9,7 @@ import { LogOut } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, profile, signOut, isLoading } = useAuth();
+  const { user, profile, role, signOut, isLoading } = useAuth();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -18,10 +18,10 @@ const Dashboard = () => {
     }
     
     // Redirect admin/manager to management dashboard
-    if (profile && (profile.role === 'admin' || profile.role === 'manager')) {
+    if (role && (role === 'admin' || role === 'manager')) {
       navigate('/management');
     }
-  }, [user, profile, isLoading, navigate]);
+  }, [user, role, isLoading, navigate]);
 
   const handleLogout = async () => {
     await signOut();

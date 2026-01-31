@@ -18,7 +18,7 @@ import { format, startOfWeek, endOfWeek, isAfter, parseISO } from 'date-fns';
 
 const ManagementDashboard = () => {
   const navigate = useNavigate();
-  const { user, profile, signOut, isLoading } = useAuth();
+  const { user, profile, role, signOut, isLoading } = useAuth();
   const { sessions, isLoading: sessionsLoading } = useSessions();
   const { coaches, isLoading: coachesLoading } = useCoaches();
 
@@ -29,10 +29,10 @@ const ManagementDashboard = () => {
     }
     
     // Only admin/manager can access this page
-    if (profile && profile.role !== 'admin' && profile.role !== 'manager') {
+    if (role && role !== 'admin' && role !== 'manager') {
       navigate('/dashboard');
     }
-  }, [user, profile, isLoading, navigate]);
+  }, [user, role, isLoading, navigate]);
 
   const handleLogout = async () => {
     await signOut();
