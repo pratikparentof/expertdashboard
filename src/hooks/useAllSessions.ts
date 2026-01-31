@@ -59,11 +59,11 @@ const transformSession = (row: SessionRow): AllSessionData => ({
 });
 
 export const useAllSessions = () => {
-  const { user, profile } = useAuth();
+  const { user, role } = useAuth();
   const queryClient = useQueryClient();
 
   // Only allow admin/manager to fetch all sessions
-  const canAccessAllSessions = profile?.role === 'admin' || profile?.role === 'manager';
+  const canAccessAllSessions = role === 'admin' || role === 'manager';
 
   const { data: sessions = [], isLoading, error } = useQuery({
     queryKey: ['all-sessions'],
@@ -88,11 +88,18 @@ export const useAllSessions = () => {
         .from('parents')
         .select('id, name');
 
-      // Fetch all coaches for name mapping
+      // Fetch all coaches (profiles with coach role from user_roles table)
+      const { data: coachRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'coach');
+
+      const coachIds = coachRoles?.map(r => r.user_id) || [];
+      
       const { data: coachesData } = await supabase
         .from('profiles')
         .select('id, name')
-        .eq('role', 'coach');
+        .in('id', coachIds.length > 0 ? coachIds : ['no-matches']);
 
       const childMap = new Map(childrenData?.map(c => [c.id, { name: c.name, parentId: c.parent_id }]) || []);
       const parentMap = new Map(parentsData?.map(p => [p.id, p.name]) || []);

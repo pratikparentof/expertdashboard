@@ -2,20 +2,27 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+export type AppRole = 'coach' | 'freelancer' | 'admin' | 'manager';
+
 export interface Profile {
   id: string;
   name: string;
   email: string;
-  role: 'coach' | 'freelancer' | 'admin' | 'manager';
   avatar_url?: string | null;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface UserWithRole {
+  profile: Profile | null;
+  role: AppRole | null;
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
+  role: AppRole | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
@@ -27,6 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [role, setRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Fetch profile when user changes
@@ -44,6 +52,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return data;
   };
 
+  // Fetch role from user_roles table
+  const fetchRole = async (userId: string): Promise<AppRole | null> => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) {
+      console.error('Error fetching role:', error);
+      return null;
+    }
+    return data?.role as AppRole;
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -54,12 +77,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (currentSession?.user) {
           // Use setTimeout to avoid potential race conditions with Supabase
           setTimeout(async () => {
-            const profileData = await fetchProfile(currentSession.user.id);
+            const [profileData, userRole] = await Promise.all([
+              fetchProfile(currentSession.user.id),
+              fetchRole(currentSession.user.id)
+            ]);
             setProfile(profileData);
+            setRole(userRole);
             setIsLoading(false);
           }, 0);
         } else {
           setProfile(null);
+          setRole(null);
           setIsLoading(false);
         }
       }
@@ -71,8 +99,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(existingSession?.user ?? null);
       
       if (existingSession?.user) {
-        fetchProfile(existingSession.user.id).then(profileData => {
+        Promise.all([
+          fetchProfile(existingSession.user.id),
+          fetchRole(existingSession.user.id)
+        ]).then(([profileData, userRole]) => {
           setProfile(profileData);
+          setRole(userRole);
           setIsLoading(false);
         });
       } else {
@@ -95,6 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setSession(null);
     setProfile(null);
+    setRole(null);
   };
 
   return (
@@ -102,6 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user,
       session,
       profile,
+      role,
       isLoading,
       signIn,
       signOut,

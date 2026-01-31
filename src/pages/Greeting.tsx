@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const Greeting = () => {
   const navigate = useNavigate();
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, role, isLoading } = useAuth();
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -12,10 +12,10 @@ const Greeting = () => {
       return;
     }
 
-    if (profile) {
+    if (profile && role) {
       // Auto-redirect after 1.5 seconds based on role
       const timer = setTimeout(() => {
-        if (profile.role === 'admin' || profile.role === 'manager') {
+        if (role === 'admin' || role === 'manager') {
           navigate('/management');
         } else {
           navigate('/dashboard');
@@ -24,12 +24,12 @@ const Greeting = () => {
 
       return () => clearTimeout(timer);
     }
-  }, [navigate, user, profile, isLoading]);
+  }, [navigate, user, profile, role, isLoading]);
 
-  if (isLoading || !profile) return null;
+  if (isLoading || !profile || !role) return null;
 
   const getRoleLabel = () => {
-    switch (profile.role) {
+    switch (role) {
       case 'admin':
         return 'Admin';
       case 'manager':

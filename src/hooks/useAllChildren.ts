@@ -42,10 +42,10 @@ const transformChild = (row: ChildRow): ChildData => ({
 });
 
 export const useAllChildren = () => {
-  const { user, profile } = useAuth();
+  const { user, role } = useAuth();
 
   // Only admin/manager can access all children
-  const canAccessAll = profile?.role === 'admin' || profile?.role === 'manager';
+  const canAccessAll = role === 'admin' || role === 'manager';
 
   const { data: children = [], isLoading: childrenLoading } = useQuery({
     queryKey: ['all-children'],
