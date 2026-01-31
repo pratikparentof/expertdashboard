@@ -13,9 +13,13 @@ const Greeting = () => {
     }
 
     if (profile) {
-      // Auto-redirect after 1.5 seconds
+      // Auto-redirect after 1.5 seconds based on role
       const timer = setTimeout(() => {
-        navigate('/dashboard');
+        if (profile.role === 'admin' || profile.role === 'manager') {
+          navigate('/management');
+        } else {
+          navigate('/dashboard');
+        }
       }, 1500);
 
       return () => clearTimeout(timer);
@@ -24,7 +28,19 @@ const Greeting = () => {
 
   if (isLoading || !profile) return null;
 
-  const roleLabel = profile.role === 'coach' ? 'Coach' : 'Freelancer';
+  const getRoleLabel = () => {
+    switch (profile.role) {
+      case 'admin':
+        return 'Admin';
+      case 'manager':
+        return 'Manager';
+      case 'coach':
+        return 'Coach';
+      default:
+        return 'Freelancer';
+    }
+  };
+
   const firstName = profile.name.split(' ')[0];
 
   return (
@@ -34,7 +50,7 @@ const Greeting = () => {
           Hi {firstName} 👋
         </h1>
         <p className="text-lg text-muted-foreground">
-          Preparing your sessions…
+          Preparing your {getRoleLabel()} dashboard…
         </p>
         <div className="mt-8 flex justify-center">
           <div className="flex space-x-1">

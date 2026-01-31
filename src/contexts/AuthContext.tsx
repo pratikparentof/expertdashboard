@@ -6,7 +6,7 @@ export interface Profile {
   id: string;
   name: string;
   email: string;
-  role: 'coach' | 'freelancer';
+  role: 'coach' | 'freelancer' | 'admin' | 'manager';
   avatar_url?: string | null;
   created_at?: string;
   updated_at?: string;
